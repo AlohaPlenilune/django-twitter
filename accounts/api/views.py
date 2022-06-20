@@ -41,3 +41,30 @@ class AccountViewSet(viewsets.ViewSet):
             'success': True,
             'user': UserSerializer(user).data,
         })
+
+    @action(methods=['POST'], detail=False)
+    def login(self, request):
+        """
+         默认的 username 是 admin, password 也是 admin
+        """
+
+        serializer = LoginSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                "success": False,
+                "message": "Please check input",
+                "errors": serializer.errors,
+            }, status=400)
+        username = serializer.validated_data['username']
+        password = serializer.validated_data['password']
+        user = django_authenticate(username=username, password=password)
+        if not user or user.is_anonymous:
+            return Response({
+                "success": False,
+                "message": "username and password does not match",
+            }, status=400)
+        django_login(request, user)
+        return Response({
+            "success": True,
+            "user": UserSerializer(instance=user).data,
+        })
