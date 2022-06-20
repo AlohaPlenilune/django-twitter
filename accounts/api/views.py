@@ -26,7 +26,7 @@ class AccountViewSet(viewsets.ViewSet):
     @action(methods=['POST'], detail=False)
     def signup(self, request):
         """
-        使⽤ username, email, password 进⾏注册
+        Use username, email, password to sign up
         """
         serializer = SignupSerializer(data=request.data)
         if not serializer.is_valid():
@@ -45,9 +45,8 @@ class AccountViewSet(viewsets.ViewSet):
     @action(methods=['POST'], detail=False)
     def login(self, request):
         """
-         默认的 username 是 admin, password 也是 admin
+         The default username is admin, password also is admin.
         """
-
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({
@@ -68,3 +67,13 @@ class AccountViewSet(viewsets.ViewSet):
             "success": True,
             "user": UserSerializer(instance=user).data,
         })
+
+    @action(methods=['GET'], detail=False)
+    def login_status(self, request):
+        """
+         Check the current login status and detailed information.
+        """
+        data = {'has_logged_in': request.user.is_authenticated}
+        if request.user.is_authenticated:
+            data['user'] = UserSerializer(request.user).data
+        return Response(data)
