@@ -77,3 +77,11 @@ class AccountViewSet(viewsets.ViewSet):
         if request.user.is_authenticated:
             data['user'] = UserSerializer(request.user).data
         return Response(data)
+
+    @action(methods=['POST'], detail=False)
+    def logout(self, request):
+        """
+         登出当前⽤户
+        """
+        django_logout(request)
+        return Response({"success": True})
