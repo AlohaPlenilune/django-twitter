@@ -41,8 +41,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'debug_toolbar',
 
-    # project apps
+    # project apps (include those created by startapp)
     'accounts',
+    'tweets',
 ]
 
 REST_FRAMEWORK = {
