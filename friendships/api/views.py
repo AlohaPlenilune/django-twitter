@@ -24,10 +24,16 @@ class FriendshipViewSet(viewsets.GenericViewSet):
     def followings(self, request, pk):
         friendships = Friendship.objects.filter(from_user_id=pk).order_by('-created_at')
         serializer = FollowingSerializer(friendships, many=True)
-        return Response({'followers': serializer.data}, status=200)
+        return Response({'followings': serializer.data}, status=200)
 
     @action(methods=['POST'], detail=True, permission_classes=[IsAuthenticated])
     def follow(self, request, pk):
+        if Friendship.objects.filter(from_user=request.user, to_user=pk).exists():
+            return Response({
+                'message': 'You have already followed this person.',
+                'duplicate': True,
+            }, status=status.HTTP_201_CREATED)
+
         serializer = FriendshipSerializerForCreate(data={
             'from_user_id': request.user.id,
             'to_user_id': pk,
@@ -57,7 +63,7 @@ class FriendshipViewSet(viewsets.GenericViewSet):
             from_user=request.user,
             to_user=unfollow_user,
         ).delete()
-        return Response({'success': True, 'delete': deleted})
+        return Response({'success': True, 'deleted': deleted})
 
 
     def list(self, request):
