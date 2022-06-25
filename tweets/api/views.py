@@ -4,7 +4,7 @@ from rest_framework.response import Response
 
 from tweets.api.serializers import TweetSerializer, TweetSerializerForCreate
 from tweets.models import Tweet
-
+from newsfeeds.services import NewsFeedService
 
 class TweetViewSet(viewsets.GenericViewSet):
     # 'TweetViewSet' should either include a `serializer_class` attribute,
@@ -38,5 +38,6 @@ class TweetViewSet(viewsets.GenericViewSet):
             }, status=400)
         # save will trigger create method in TweetSerializerForCreate
         tweet = serializer.save()
+        NewsFeedService.fanout_to_followers(tweet)
         # use TweetSerializerForCreate when creating tweet, use TweetSerializer when showing the tweet
         return Response(TweetSerializer(tweet).data, status=201)
