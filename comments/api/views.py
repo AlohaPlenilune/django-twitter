@@ -2,8 +2,14 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
-from comments.api.serializers import CommentSerializerForCreate, CommentSerializer
+from comments.api.serializers import (
+    CommentSerializerForCreate,
+    CommentSerializer,
+    CommentSerializerForUpdate,
+)
 from comments.models import Comment
+from comments.api.permissions import IsObjectOwner
+
 class CommentViewSet(viewsets.GenericViewSet):
     """
     only need list, create, update, destroy
@@ -15,6 +21,10 @@ class CommentViewSet(viewsets.GenericViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [IsAuthenticated()]
+        if self.action in ['destroy', 'update']:
+            # return 2 value because we want to know
+            # the detailed information when the request is denied
+            return [IsAuthenticated(), IsObjectOwner()]
         return [AllowAny()]
 
     def create(self, request, *args, **kwargs):
@@ -37,3 +47,36 @@ class CommentViewSet(viewsets.GenericViewSet):
             CommentSerializer(comment).data,
             status=status.HTTP_201_CREATED,
         )
+    # similar to create
+    def update(self, request, *args, **kwargs):
+        # get_object is a function in django rest framework.
+        # It will raise 404 error when cannot find the object.
+        serializer = CommentSerializerForUpdate(
+            instance=self.get_object(),
+            data=request.data,
+        )
+
+        if not serializer.is_valid():
+            return Response({
+                'message': 'Please check input',
+                'errors': serializer.errors,
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # The .save() will trigger the update method in serializer.
+        # .save() will judge whether to use create or update based on the argument of instance
+        comment = serializer.save()
+        return Response(
+            CommentSerializer(comment).data,
+            status=status.HTTP_200_OK,
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        comment = self.get_object()
+        # 真删除？
+        comment.delete()
+        # the default return value of destroy is status code 204 no content
+        # Here we return success = True to make it more understandable
+        return Response({
+            'success': True,
+        }, status=status.HTTP_200_OK)
+
