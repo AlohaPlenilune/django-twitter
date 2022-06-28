@@ -29,6 +29,12 @@ class Tweet(models.Model):
     def hours_to_now(self):
         return (utc_now() - self.created_at).seconds // 3600
 
+    # @property
+    # def comments(self):
+    #     # return Comment.objects.filter(tweet=self)
+    #     return self.comment_set.all()
+#
+
     def __str__(self):
         return f'{self.created_at} {self.user}: {self.content}'
 

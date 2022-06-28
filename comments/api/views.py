@@ -9,6 +9,8 @@ from comments.api.serializers import (
 )
 from comments.models import Comment
 from comments.api.permissions import IsObjectOwner
+from utils.decorators import required_params
+
 
 class CommentViewSet(viewsets.GenericViewSet):
     """
@@ -28,12 +30,14 @@ class CommentViewSet(viewsets.GenericViewSet):
             return [IsAuthenticated(), IsObjectOwner()]
         return [AllowAny()]
 
+    @required_params(params=['tweet_id'])
     def list(self, request, *args, **kwargs):
-        if 'tweet_id' not in request.query_params:
-            return Response({
-                'message': 'missing tweet_id in request',
-                'success': False,
-            }, status=status.HTTP_400_BAD_REQUEST,)
+        # 有required_params就可以不用写下面这部分了
+        # if 'tweet_id' not in request.query_params:
+        #     return Response({
+        #         'message': 'missing tweet_id in request',
+        #         'success': False,
+        #     }, status=status.HTTP_400_BAD_REQUEST,)
         # Another approach:
         # tweet_id = request.query_params['tweet_id']
         # comments = Comment.objects.filter(tweet_id=tweet_id)
