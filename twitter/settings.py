@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     # third party
     'rest_framework',
     'debug_toolbar',
+    'django_filters',
 
     # project apps (include those created by startapp)
     'accounts',
@@ -52,6 +53,9 @@ INSTALLED_APPS = [
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
 }
 
 MIDDLEWARE = [
@@ -141,3 +145,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# use try incase other people do not have local_settings.py file
+try:
+    from .local_settings import *
+except:
+    pass
