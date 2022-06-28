@@ -15,6 +15,11 @@ class UserSerializerForTweet(serializers.ModelSerializer):
 class UserSerializerForFriendship(UserSerializerForTweet):
     pass
 
+# Generally, UserSerializer for different function should be different
+# because in different functions, we need different user information.
+class UserSerializerForComment(UserSerializerForTweet):
+    pass
+
 class SignupSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=20, min_length=6)
     password = serializers.CharField(max_length=20, min_length=6)
