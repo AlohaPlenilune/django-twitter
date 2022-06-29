@@ -2,13 +2,13 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from accounts.api.serializers import UserSerializer
+from accounts.api.serializers import UserSerializer, UserSerializerForLike
 from comments.models import Comment
 from likes.models import Like
 from tweets.models import Tweet
 
 class LikeSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
+    user = UserSerializerForLike()
 
     class Meta:
         model = Like
