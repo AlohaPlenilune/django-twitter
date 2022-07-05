@@ -4,7 +4,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from notifications.models import Notification
 
-from inbox.api.serializers import NotificationSerializer
+from inbox.api.serializers import (
+    NotificationSerializer,
+    NotificationSerializerForUpdate
+)
+from utils.decorators import required_params
 
 
 class NotificationViewSet(
@@ -38,3 +42,23 @@ class NotificationViewSet(
         # query_set method
         updated_count = self.get_queryset().update(unread=False) # 批量操作
         return Response({'marked_count': updated_count}, status=status.HTTP_200_OK)
+
+    @required_params(method='PUT', params=['unread'])
+    def update(self, request, *args, ** kwargs):
+        # PUT /api/notifications/1/
+        serializer = NotificationSerializerForUpdate(
+            # 一定要有instance，
+            # 不然serializer.save()的时候没看到instance就会调用create而不是update
+            instance = self.get_object(),
+            data=request.data,
+        )
+        if not serializer.is_valid():
+            return Response({
+                'message': 'Please check your input',
+                'errors': serializer.errors,
+            }, status=status.HTTP_400_BAD_REQUEST)
+        notification = serializer.save()
+        return Response(
+            NotificationSerializer(notification).data,
+            status=status.HTTP_200_OK,
+        )

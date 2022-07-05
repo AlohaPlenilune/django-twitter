@@ -127,3 +127,56 @@ class NotificationApiTests(TestCase):
         self.assertEqual(response.data['count'], 1)
         response = self.user1_client.get(NOTIFICATION_URL, {'unread': False})
         self.assertEqual(response.data['count'], 1)
+
+    def test_update(self):
+        self.user2_client.post(LIKE_URL, {
+            'content_type': 'tweet',
+            'object_id': self.user1_tweet.id,
+        })
+
+        comment = self.create_comment(self.user1, self.user1_tweet)
+        self.user2_client.post(LIKE_URL, {
+            'content_type': 'comment',
+            'object_id': comment.id,
+        })
+        notification = self.user1.notifications.first()
+
+        url = '/api/notifications/{}/'.format(notification.id)
+
+        # should use PUT, not POST
+        response = self.user1_client.post(url, {'unread': False})
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # only user himself can update
+        # anonymous returns 403
+        response = self.anonymous_client.put(url, {'unread': False})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # other logged-in person returns 404
+        # (because we got the queryset of current logged-in user)
+        response = self.user2_client.put(url, {'unread': False})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # successfully mark as read
+        response = self.user1_client.put(url, {'unread': False})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        unread_url = '/api/notifications/unread-count/'
+        response = self.user1_client.get(unread_url)
+        self.assertEqual(response.data['unread_count'], 1)
+
+        # mark as unread
+        response = self.user1_client.put(url, {'unread': True})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.user1_client.get(unread_url)
+        self.assertEqual(response.data['unread_count'], 2)
+
+        # must have unread keyword
+        response = self.user1_client.put(url, {'verb': 'newverb'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # cannot change other information
+        response = self.user1_client.put(url, {'verb': 'newverb', 'unread': False})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        notification.refresh_from_db()
+        self.assertNotEqual(notification.verb, 'newverb')
+
+
