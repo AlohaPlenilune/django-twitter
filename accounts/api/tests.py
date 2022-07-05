@@ -1,3 +1,7 @@
+from django.core.files.uploadedfile import SimpleUploadedFile
+from rest_framework import status
+
+from accounts.models import UserProfile
 from testing.testcases import TestCase
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
@@ -6,6 +10,7 @@ LOGIN_URL = '/api/accounts/login/'
 LOGOUT_URL = '/api/accounts/logout/'
 SIGNUP_URL = '/api/accounts/signup/'
 LOGIN_STATUS_URL = '/api/accounts/login_status/'
+USER_PROFILE_DETAIL_URL = '/api/profiles/{}/'
 
 class AccountApiTests(TestCase):
     def setUp(self):
@@ -51,7 +56,7 @@ class AccountApiTests(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertNotEqual(response.data['user'], None)
-        self.assertEqual(response.data['user']['email'], 'admin@example.com')
+        self.assertEqual(response.data['user']['id'], self.user.id)
 
         # 验证已经登录了
         # has logged in
@@ -134,7 +139,51 @@ class AccountApiTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['user']['username'], 'someone')
 
+        # Check if user profile has been created
+        created_user_id = response.data['user']['id']
+        profile = UserProfile.objects.filter(user_id=created_user_id).first()
+        self.assertNotEqual(profile, None)
+
         # 验证⽤户已经登⼊
         # Validate user has logged in
         response = self.client.get(LOGIN_STATUS_URL)
         self.assertEqual(response.data['has_logged_in'], True)
+
+
+class UserProfileAPITests(TestCase):
+    def test_update(self):
+        user1, user1_client = self.create_user_and_client('user1')
+        profile = user1.profile
+        profile.nickname = 'previous nickname'
+        profile.save()
+        url = USER_PROFILE_DETAIL_URL.format(profile.id)
+
+        # profile should only be updated by its user
+        _, user2_client = self.create_user_and_client('user2')
+        response = user2_client.put(url, {
+            'nickname': 'new nickname',
+        })
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        profile.refresh_from_db()
+        self.assertEqual(profile.nickname, 'previous nickname')
+
+        # update nickname
+        response = user1_client.put(url, {
+            'nickname': 'new nickname',
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        profile.refresh_from_db()
+        self.assertEqual(profile.nickname, 'new nickname')
+
+        # update avatar
+        response = user1_client.put(url, {
+            'avatar': SimpleUploadedFile(
+                name='my-avatar.jpg',
+                content=str.encode('a fake image'),
+                content_type='image/jpeg',
+            ),
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual('my-avatar' in response.data['avatar'], True)
+        profile.refresh_from_db()
+        self.assertIsNotNone(profile.avatar)

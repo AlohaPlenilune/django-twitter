@@ -1,4 +1,3 @@
-from accounts.api.serializers import UserSerializer
 from django.contrib.auth.models import User
 from rest_framework import permissions
 from rest_framework import viewsets
@@ -10,15 +9,25 @@ from django.contrib.auth import (
     login as django_login,
     logout as django_logout,
 )
-from accounts.api.serializers import SignupSerializer, LoginSerializer
+from accounts.api.serializers import (
+    SignupSerializer,
+    LoginSerializer,
+    UserSerializer,
+    UserProfileSerializerForUpdate,
+    UserSerializerWithProfile,
+)
+from accounts.models import UserProfile
+from utils.permissions import IsObjectOwner
+
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     """
      API endpoint that allows users to be viewed or edited.
     """
     queryset = User.objects.all().order_by('-date_joined')
-    serializer_class = UserSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = UserSerializerWithProfile
+    # 因为能看所有用户的，不是什么用户都可以，必须是管理员
+    permission_classes = (permissions.IsAdminUser,)
 
 class AccountViewSet(viewsets.ViewSet):
     permission_classes = (AllowAny,)
@@ -36,7 +45,9 @@ class AccountViewSet(viewsets.ViewSet):
                 'message': "Please check input",
                 'errors': serializer.errors,
             }, status=400)
+
         user = serializer.save()
+
         django_login(request, user)
         return Response({
             'success': True,
@@ -89,3 +100,12 @@ class AccountViewSet(viewsets.ViewSet):
         """
         django_logout(request)
         return Response({"success": True})
+
+
+class UserProfileViewSet(
+    viewsets.GenericViewSet,
+    viewsets.mixins.UpdateModelMixin,
+):
+    queryset = UserProfile
+    permission_classes = (permissions.IsAuthenticated, IsObjectOwner,)
+    serializer_class = UserProfileSerializerForUpdate
