@@ -8,7 +8,7 @@ from comments.api.serializers import (
     CommentSerializerForUpdate,
 )
 from comments.models import Comment
-from comments.api.permissions import IsObjectOwner
+from utils.permissions import IsObjectOwner
 from inbox.services import NotificationService
 from utils.decorators import required_params
 
