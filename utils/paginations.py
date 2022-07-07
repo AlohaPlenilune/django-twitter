@@ -1,24 +1,39 @@
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import BasePagination
 from rest_framework.response import Response
 
 
-class FriendshipPagination(PageNumberPagination):
-    # the default page size, if the page size parameter is not in the url
+class EndlessPagination(BasePagination):
     page_size = 20
-    # The default page_size_query_param is None, which means
-    # the client cannot choose the page size
-    # if we include this param, it means the client can assign a size
-    # eg. mobile and web visit a same API but need different page size
-    page_size_query_param = 'size'
-    # The largest size that allowed
-    max_page_size = 20
 
-    # 完成翻页返回给前端的数据
+    def __init__(self):
+        super(EndlessPagination, self).__init__()
+        self.has_next_page = False
+
+    def to_html(self):
+        pass
+
+    def paginate_queryset(self, queryset, request, view=None):
+
+        # refresh to load new information by scrolling up
+        # to simplify, the scroll up refresh does not contain pagination.
+        # just load all updated data
+        # because if the data hasn't been updated for a long time, we will use
+        # reloading to refresh, rather than scrolling up.
+        if 'created_at__gt' in request.query_params:
+            created_at__gt = request.query_params['created_at__gt']
+            queryset = queryset.filter(created_at__gt=created_at__gt)
+            self.has_next_page = False
+            return queryset.order_by('-created_at')
+
+        if 'created_at__lt' in request.query_params:
+            created_at__lt = request.query_params['created_at__lt']
+            queryset = queryset.filter(created_at__lt=created_at__lt)
+        queryset = queryset.order_by('-created_at')[:self.page_size + 1]
+        self.has_next_page = len(queryset) > self.page_size
+        return queryset[:self.page_size]
+
     def get_paginated_response(self, data):
         return Response({
-            'total_results': self.page.paginator.count,
-            'total_pages': self.page.paginator.num_pages,
-            'page_number': self.page.number,
-            'has_next_page': self.page.has_next(),
-            'results': data, # the previous followings and followers are all results
+            'has_next_page': self.has_next_page,
+            'results': data,
         })

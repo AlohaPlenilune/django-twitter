@@ -3,7 +3,7 @@ from rest_framework.test import APIClient
 from testing.testcases import TestCase
 from rest_framework import status
 
-from utils.paginations import FriendshipPagination
+from friendships.api.paginations import FriendshipPagination
 
 FOLLOW_URL = '/api/friendships/{}/follow/'
 UNFOLLOW_URL = '/api/friendships/{}/unfollow/'

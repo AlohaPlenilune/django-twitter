@@ -10,6 +10,7 @@ from tweets.api.serializers import (
 from tweets.models import Tweet
 from newsfeeds.services import NewsFeedService
 from utils.decorators import required_params
+from utils.paginations import EndlessPagination
 
 
 class TweetViewSet(viewsets.GenericViewSet):
@@ -19,6 +20,7 @@ class TweetViewSet(viewsets.GenericViewSet):
     serializer_class = TweetSerializerForCreate
     # 这里不声明queryset的话retrieve里面的get_objects()并不知道去哪里get
     queryset = Tweet.objects.all()
+    pagination_class = EndlessPagination
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -32,12 +34,13 @@ class TweetViewSet(viewsets.GenericViewSet):
         #     return Response('missing user_id', status=400)
         user_id = request.query_params['user_id']
         tweets = Tweet.objects.filter(user_id=user_id).order_by('-created_at')
+        tweets = self.paginate_queryset(tweets)
         serializer = TweetSerializer(
             tweets,
             context={'request': request},
             many=True,
         )
-        return Response({'tweets': serializer.data})
+        return self.get_paginated_response(serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
         # TODO 通过某个query参数with_all_comments来决定是否需要带上所有comments
