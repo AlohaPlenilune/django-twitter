@@ -214,3 +214,5 @@ class TweetApiTests(TestCase):
         self.assertEqual(response.data['has_next_page'], False)
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['results'][0]['id'], new_tweet.id)
+
+        # 没有page number的概念，数据量大只要测当前页信息数量而不是总信息数量
