@@ -102,6 +102,10 @@ class TweetApiTests(TestCase):
         response = self.anonymous_client.get(url)
         self.assertEqual(len(response.data['comments']), 2)
 
+        # tweet 里包含用户的头像和昵称
+        profile = self.user1.profile
+        self.assertEqual(response.data['user']['nickname'], profile.nickname)
+        self.assertEqual(response.data['user']['avatar_url'], None)
 
     def test_create_with_files(self):
         # upload empty files
@@ -216,3 +220,4 @@ class TweetApiTests(TestCase):
         self.assertEqual(response.data['results'][0]['id'], new_tweet.id)
 
         # 没有page number的概念，数据量大只要测当前页信息数量而不是总信息数量
+
