@@ -100,3 +100,8 @@ class TweetApiTests(TestCase):
         response = self.anonymous_client.get(url)
         self.assertEqual(len(response.data['comments']), 2)
 
+        # tweet 里包含用户的头像和昵称
+        profile = self.user1.profile
+        self.assertEqual(response.data['user']['nickname'], profile.nickname)
+        self.assertEqual(response.data['user']['avatar_url'], None)
+
