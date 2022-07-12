@@ -171,6 +171,24 @@ AWS_S3_REGION_NAME = 'us-east-1'
 # - media 里使用户上传的数据文件，而不是代码
 MEDIA_ROOT = 'media/'
 
+# https://docs.djangoproject.com/en/3.1/topics/cache/
+# sudo apt-get install memcached
+# use `pip install python-memcached`
+# DO NOT pip install memcache or django-memcached (out-dated)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
+        'TIMEOUT': 86400, # default TTL(time to live)
+    },
+    'testing': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
+        'TIMEOUT': 86400,
+        'KEY_PREFIX': 'testing',
+    },
+}
+
 # use try incase other people do not have local_settings.py file
 try:
     from .local_settings import *

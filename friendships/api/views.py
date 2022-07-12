@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from friendships.api.serializers import FollowerSerializer, FollowingSerializer, FriendshipSerializerForCreate
 from friendships.models import Friendship
 from friendships.api.paginations import FriendshipPagination
+from friendships.services import FriendshipService
 
 
 class FriendshipViewSet(viewsets.GenericViewSet):
@@ -60,6 +61,8 @@ class FriendshipViewSet(viewsets.GenericViewSet):
                 'errors': serializer.errors,
             }, status=status.HTTP_400_BAD_REQUEST)
         instance = serializer.save()
+        # 手动调用的缺点是需要记着哪些地方更改了friendships，如果利用django的signal机制会更方便一点
+        # FriendshipService.invalidate_following_cache(request.user.id)
         return Response(
             # 凡是用FollowingSerializer和FollowerSerializer的都需要传context
             FollowingSerializer(instance, context={'request': request}).data,
@@ -79,6 +82,7 @@ class FriendshipViewSet(viewsets.GenericViewSet):
             from_user=request.user,
             to_user=unfollow_user,
         ).delete()
+        # FriendshipService.invalidate_following_cache(request.user.id)
         return Response({'success': True, 'deleted': deleted})
 
 
