@@ -11,7 +11,7 @@ from tweets.services import TweetService
 
 
 class TweetSerializer(serializers.ModelSerializer):
-    user = UserSerializerForTweet() # get detailed user information rather than just user_id
+    user = UserSerializerForTweet(source='cached_user') # get detailed user information rather than just user_id
     comments_count = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     has_liked = serializers.SerializerMethodField()

@@ -3,6 +3,7 @@ from testing.testcases import TestCase
 # Create your tests here.
 class CommentModelTest(TestCase):
     def setUp(self):
+        self.clear_cache()
         self.user1 = self.create_user('user1')
         self.tweet = self.create_tweet(self.user1)
         self.comment = self.create_comment(self.user1, self.tweet)
