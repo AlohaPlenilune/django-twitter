@@ -4,6 +4,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 # Create your models here.
+from accounts.services import UserService
+
 
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL,null=True)
@@ -30,3 +32,7 @@ class Like(models.Model):
             self.content_type,
             self.object_id,
         )
+
+    @property
+    def cached_user(self):
+        return UserService.get_user_through_cache(self.user_id)

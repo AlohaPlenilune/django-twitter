@@ -10,7 +10,7 @@ from tweets.models import Tweet
 class CommentSerializer(serializers.ModelSerializer):
     # without user = UserSerializer(), the user in the fields will only be user_id,
     # rather than user information as UserSerializer defined.
-    user = UserSerializerForComment()
+    user = UserSerializerForComment(source='cached_user')
     likes_count = serializers.SerializerMethodField()
     has_liked = serializers.SerializerMethodField()
 

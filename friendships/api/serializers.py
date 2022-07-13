@@ -21,7 +21,7 @@ class FollowingUserIdSetMixin:
         return user_id_set
 
 class FollowerSerializer(serializers.ModelSerializer, FollowingUserIdSetMixin):
-    user = UserSerializerForFriendship(source='from_user') # source can be a field or method
+    user = UserSerializerForFriendship(source='cached_from_user') # source can be a field or method
     created_at = serializers.DateTimeField()
     has_followed = serializers.SerializerMethodField()
 
@@ -34,7 +34,7 @@ class FollowerSerializer(serializers.ModelSerializer, FollowingUserIdSetMixin):
 
 
 class FollowingSerializer(serializers.ModelSerializer, FollowingUserIdSetMixin):
-    user = UserSerializerForFriendship(source='to_user') # source can be a field or method
+    user = UserSerializerForFriendship(source='cached_to_user') # source can be a field or method
     created_at = serializers.DateTimeField()
     has_followed = serializers.SerializerMethodField()
     class Meta:
