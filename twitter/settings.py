@@ -189,6 +189,14 @@ CACHES = {
     },
 }
 
+# Redis
+# 安装方法: sudo apt-get install redis
+# 然后安装 redis 的 python 客户端： pip install redis
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = 6379 # 查一下得到的默认redis跑的端口
+REDIS_DB = 0 if TESTING else 1 # 和memcached区分方法不一样
+REDIS_KEY_EXPIRE_TIME = 7 * 86400  # in seconds
+
 # use try incase other people do not have local_settings.py file
 try:
     from .local_settings import *
