@@ -1,3 +1,4 @@
+from dateutil import parser
 from rest_framework.pagination import BasePagination
 from rest_framework.response import Response
 
@@ -13,7 +14,8 @@ class EndlessPagination(BasePagination):
         pass
 
     def paginate_queryset(self, queryset, request, view=None):
-
+        if type(queryset) == list:
+            return self.paginate_ordered_list(queryset, request)
         # refresh to load new information by scrolling up
         # to simplify, the scroll up refresh does not contain pagination.
         # just load all updated data
@@ -37,3 +39,31 @@ class EndlessPagination(BasePagination):
             'has_next_page': self.has_next_page,
             'results': data,
         })
+
+    def paginate_ordered_list(self, reverse_ordered_list, request):
+        if 'created_at__gt' in request.query_params:
+            # 2020-11-11 00:00:00.123456
+            # isoparse用来解析时间戳
+            created_at__gt = parser.isoparse(request.query_params['created_at__gt'])
+            objects = []
+            for obj in reverse_ordered_list:
+                if obj.created_at > created_at__gt:
+                    objects.append(obj)
+                else:
+                    break
+            self.has_next_page = False
+            return objects
+
+        index = 0
+        if 'created_at__lt' in request.query_params:
+            created_at__lt = parser.isoparse(request.query_params['created_at__lt'])
+            for index, obj in enumerate(reverse_ordered_list):
+                if obj.created_at < created_at__lt:
+                    break
+            else:
+                # if no objects satisfying the requirement, return empty list
+                # 注意这个else对应的是for
+                reverse_ordered_list = []
+        self.has_next_page = len(reverse_ordered_list) > index + self.page_size
+        return reverse_ordered_list[index: index + self.page_size]
+
