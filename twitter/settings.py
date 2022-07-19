@@ -196,6 +196,7 @@ REDIS_HOST = '127.0.0.1'
 REDIS_PORT = 6379 # 查一下得到的默认redis跑的端口
 REDIS_DB = 0 if TESTING else 1 # 和memcached区分方法不一样
 REDIS_KEY_EXPIRE_TIME = 7 * 86400  # in seconds
+REDIS_LIST_LENGTH_LIMIT = 200 if not TESTING else 20
 
 # use try incase other people do not have local_settings.py file
 try:

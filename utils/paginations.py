@@ -1,10 +1,11 @@
 from dateutil import parser
+from django.conf import settings
 from rest_framework.pagination import BasePagination
 from rest_framework.response import Response
 
 
 class EndlessPagination(BasePagination):
-    page_size = 20
+    page_size = 20 if not settings.TESTING else 10
 
     def __init__(self):
         super(EndlessPagination, self).__init__()
@@ -33,6 +34,30 @@ class EndlessPagination(BasePagination):
         queryset = queryset.order_by('-created_at')[:self.page_size + 1]
         self.has_next_page = len(queryset) > self.page_size
         return queryset[:self.page_size]
+
+    def paginate_cached_list(self, cached_list, request):
+        paginated_list = self.paginate_ordered_list(cached_list, request)
+
+        # if scroll to the previous page,
+        # paginated_list has already contained all the latest data, return directly
+        if 'created_ar__gt' in request.query_params:
+            return paginated_list
+
+        # scroll to the next page,
+        # if next page exists, it means cached_list still has data to be shown. return directly.
+        if self.has_next_page:
+            return paginated_list
+
+        # if cached_list is less than the REDIS_LIST_LENGTH_LIMIT,
+        # it means cached_list has contained all data, there is no more data in the database,
+        # don't need to retrieve data from database
+        if len(cached_list) < settings.REDIS_LIST_LENGTH_LIMIT:
+            return paginated_list
+
+        # if none of the previous logic is met, it means there maybe more data in the database.
+        # should request from database
+        return None
+
 
     def get_paginated_response(self, data):
         return Response({
