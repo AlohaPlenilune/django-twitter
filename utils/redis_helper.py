@@ -51,3 +51,55 @@ class RedisHelper:
         serialized_data = DjangoModelSerializer.serialize(obj)
         conn.lpush(key, serialized_data)
         conn.ltrim(key, 0, settings.REDIS_LIST_LENGTH_LIMIT - 1) # 0-199
+
+    @classmethod
+    def get_count_key(cls, obj, attr):
+        # this function works for both likes_count and comments_count
+        # so we use attr to distinguish likes_count and comments_count
+        return '{}.{}:{}'.format(obj.__class__.__name__, attr, obj.id)
+
+    @classmethod
+    def incr_count(cls, obj, attr):
+        conn = RedisClient.get_connection()
+        key = cls.get_count_key(obj, attr)
+        if conn.exists(key):
+            # incr(key) will get the value, increase by 1 and return the new value
+            return conn.incr(key)
+
+        # set the attr with related key
+        # back fill cache from db
+        # obj.refresh_from_db() will reload data from db,
+        # 不执行+1操作，因为必须保证调用incr_count之前obj.attr已经+1过了
+        # 不能保证调用者会在调用本函数前更新最新数据，所以在这个函数内部写refresh，以防调用者没有使用更新过的数据
+        obj.refresh_from_db()
+        conn.set(key, getattr(obj, attr))
+        conn.expire(key, settings.REDIS_KEY_EXPIRE_TIME)
+        return getattr(obj, attr)
+
+
+    @classmethod
+    def decr_count(cls, obj, attr):
+        conn = RedisClient.get_connection()
+        key = cls.get_count_key(obj, attr)
+        if conn.exists(key):
+            return conn.decr(key)
+
+        # obj.refresh_from_db() will reload data from db,
+        # 不执行 -1 操作，因为必须保证调用 decr_count 之前 obj.attr 已经 -1 过了
+        obj.refresh_from_db()
+        conn.set(key, getattr(obj, attr))
+        conn.expire(key, settings.REDIS_KEY_EXPIRE_TIME)
+        return getattr(obj, attr)
+
+    @classmethod
+    def get_count(cls, obj, attr):
+        conn = RedisClient.get_connection()
+        key = cls.get_count_key(obj, attr)
+        count = conn.get(key)
+        if count is not None:
+            return int(count)
+
+        obj.refresh_from_db()
+        count = getattr(obj, attr)
+        conn.set(key, count)
+        return count
