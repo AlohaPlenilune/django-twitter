@@ -24,6 +24,11 @@ class Tweet(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     # updated_at = models.DateTimeField(auto_now=True)
 
+    # new created field requires null=True, otherwise default=0 will iterate the whole table
+    # which will lead to the slow migration process and lock the table, and users cannot create new tweets
+    likes_count = models.IntegerField(default=0, null=True)
+    comments_count = models.IntegerField(default=0, null=True)
+
     # Composite index needs to be created in class Meta
     class Meta:
         index_together = (
