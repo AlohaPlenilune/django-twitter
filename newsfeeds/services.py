@@ -1,6 +1,6 @@
 from friendships.services import FriendshipService
 from newsfeeds.models import NewsFeed
-from newsfeeds.tasks import fanout_newsfeeds_task
+from newsfeeds.tasks import fanout_newsfeeds_main_task
 from twitter.cache import USER_NEWSFEEDS_PATTERN
 from utils.redis_helper import RedisHelper
 
@@ -10,7 +10,7 @@ class NewsFeedService(object):
     @classmethod
     def fanout_to_followers(cls, tweet):
         # with delay means asynch
-        fanout_newsfeeds_task.delay(tweet.id)
+        fanout_newsfeeds_main_task.delay(tweet.id, tweet.user_id)
         # without delay means sync.
         # fanout_newsfeeds_task(tweet.id)
         # when doing unit tests, the 'delay' will be removed as we set in the settings.py
