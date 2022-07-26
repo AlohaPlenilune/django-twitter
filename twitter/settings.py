@@ -198,6 +198,14 @@ REDIS_DB = 0 if TESTING else 1 # 和memcached区分方法不一样
 REDIS_KEY_EXPIRE_TIME = 7 * 86400  # in seconds
 REDIS_LIST_LENGTH_LIMIT = 200 if not TESTING else 20
 
+# Celery Configuration Options
+# 使用如下命令把 worker 进程（只执行异步任务的进程，可以在不同的机器上）单独跑起来
+#   celery -A twitter worker -l INFO
+# 因为redis非testing的时候用了1，为了区分，celery就用2
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/2' if not TESTING else 'redis://127.0.0.1:6379/0'
+CELERY_TIMEZONE = "UTC"
+CELERY_TASK_ALWAYS_EAGER = TESTING # when testing, do not use asynch
+
 # use try incase other people do not have local_settings.py file
 try:
     from .local_settings import *
