@@ -1,16 +1,17 @@
-from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.response import Response
-
 from comments.api.serializers import (
     CommentSerializerForCreate,
     CommentSerializer,
     CommentSerializerForUpdate,
 )
 from comments.models import Comment
-from utils.permissions import IsObjectOwner
+from django.utils.decorators import method_decorator
 from inbox.services import NotificationService
+from ratelimit.decorators import ratelimit
+from rest_framework import viewsets, status
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
 from utils.decorators import required_params
+from utils.permissions import IsObjectOwner
 
 
 class CommentViewSet(viewsets.GenericViewSet):
@@ -31,7 +32,9 @@ class CommentViewSet(viewsets.GenericViewSet):
             return [IsAuthenticated(), IsObjectOwner()]
         return [AllowAny()]
 
+    # 两个decorator谁前谁后都可以，但是required在前比较好，因为不带id的可以直接被required_params挡掉，剩下的再访问cache
     @required_params(params=['tweet_id'])
+    @method_decorator(ratelimit(key='user', rate='3/s', method='GET', block=True))
     def list(self, request, *args, **kwargs):
         # 有required_params就可以不用写下面这部分了
         # if 'tweet_id' not in request.query_params:
@@ -55,6 +58,7 @@ class CommentViewSet(viewsets.GenericViewSet):
         }, status=status.HTTP_200_OK)
 
 
+    @method_decorator(ratelimit(key='user', rate = '3/s', method='POST', block=True))
     def create(self, request, *args, **kwargs):
         data = {
             'user_id': request.user.id,
@@ -76,7 +80,9 @@ class CommentViewSet(viewsets.GenericViewSet):
             CommentSerializer(comment, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
         )
+
     # similar to create
+    @method_decorator(ratelimit(key='user', rate = '3/s', method='POST', block=True))
     def update(self, request, *args, **kwargs):
         # get_object is a function in django rest framework.
         # It will raise 404 error when cannot find the object.
@@ -99,6 +105,7 @@ class CommentViewSet(viewsets.GenericViewSet):
             status=status.HTTP_200_OK,
         )
 
+    @method_decorator(ratelimit(key='user', rate = '3/s', method='POST', block=True))
     def destroy(self, request, *args, **kwargs):
         comment = self.get_object()
         # 真删除？
