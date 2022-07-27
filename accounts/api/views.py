@@ -1,4 +1,6 @@
 from django.contrib.auth.models import User
+from django.utils.decorators import method_decorator
+from ratelimit.decorators import ratelimit
 from rest_framework import permissions
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -34,6 +36,7 @@ class AccountViewSet(viewsets.ViewSet):
     serializer_class = SignupSerializer
 
     @action(methods=['POST'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate = '3/s', method='POST', block=True))
     def signup(self, request):
         """
         Use username, email, password to sign up
@@ -54,7 +57,9 @@ class AccountViewSet(viewsets.ViewSet):
             'user': UserSerializer(user).data,
         }, status=201)
 
+
     @action(methods=['POST'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate = '3/s', method='POST', block=True))
     def login(self, request):
         """
          The default username is admin, password also is admin.
@@ -81,6 +86,7 @@ class AccountViewSet(viewsets.ViewSet):
         })
 
     @action(methods=['GET'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate = '3/s', method='GET', block=True))
     def login_status(self, request):
         """
          Check the current login status and detailed information.
@@ -94,6 +100,7 @@ class AccountViewSet(viewsets.ViewSet):
         return Response(data)
 
     @action(methods=['POST'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate = '3/s', method='POST', block=True))
     def logout(self, request):
         """
          登出当前⽤户

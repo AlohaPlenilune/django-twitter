@@ -1,3 +1,5 @@
+from django.utils.decorators import method_decorator
+from ratelimit.decorators import ratelimit
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -48,6 +50,7 @@ class TweetViewSet(viewsets.GenericViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
+    @method_decorator(ratelimit(key='user_or_ip', rate='5/s', method='GET', block=True))
     def retrieve(self, request, *args, **kwargs):
         # TODO 通过某个query参数with_all_comments来决定是否需要带上所有comments
         # TODO 通过某个query参数with_preview_comments来决定是否需要带上前三条comments
@@ -58,6 +61,8 @@ class TweetViewSet(viewsets.GenericViewSet):
         )
         return Response(serializer.data)
 
+    @method_decorator(ratelimit(key='user', rate='1/s', method='POST', block=True))
+    @method_decorator(ratelimit(key='user', rate='5/m', method='POST', block=True))
     def create(self, request):
         serializer = TweetSerializerForCreate(
             data=request.data,

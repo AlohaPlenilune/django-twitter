@@ -1,13 +1,14 @@
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from notifications.models import Notification
-
 from inbox.api.serializers import (
     NotificationSerializer,
     NotificationSerializerForUpdate
 )
+from django.utils.decorators import method_decorator
+from notifications.models import Notification
+from ratelimit.decorators import ratelimit
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from utils.decorators import required_params
 
 
@@ -26,6 +27,7 @@ class NotificationViewSet(
         # return self.request.user.notifications.all()
 
     @action(methods=['GET'], detail=False, url_path='unread-count')
+    @method_decorator(ratelimit(key='user', rate='3/s', method='GET', block=True))
     def unread_count(self, request, *args, **kwargs):
         # GET /api/notifications/unread-count/
         # 如果代码量比较多，一下子看不到get_queryset()是如何筛选的，可以这样写：
@@ -37,6 +39,7 @@ class NotificationViewSet(
         return Response({'unread_count': count}, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, url_path='mark-all-as-read')
+    @method_decorator(ratelimit(key='user', rate='3/s', method='POST', block=True))
     def mark_all_as_read(self, request, *args, **kwargs):
         # Notification.objects.update() # SQL update
         # query_set method
@@ -44,6 +47,7 @@ class NotificationViewSet(
         return Response({'marked_count': updated_count}, status=status.HTTP_200_OK)
 
     @required_params(method='PUT', params=['unread'])
+    @method_decorator(ratelimit(key='user', rate='3/s', method='POST', block=True))
     def update(self, request, *args, ** kwargs):
         # PUT /api/notifications/1/
         serializer = NotificationSerializerForUpdate(
